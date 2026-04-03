@@ -1,46 +1,755 @@
-<html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-        <style>
-            html * { box-sizing:border-box;}
-            section {width:100%; max-width:800px; margin:5rem auto;}
-            .makebox, .typebox {display:flex; flex-wrap: wrap; margin-bottom:2rem; }
-            .makebox img {width:calc((100% - 24px) / 4); margin-left:8px;}
-            .typebox img {width:calc((100% - 24px) / 4); margin-left:8px;}
-            .makebox img:nth-of-type(4n-3), .typebox img:nth-of-type(4n-3) { margin-left:0;}
-        </style>
-    </head>
-    <body>
-        <section>
-        <div class="makebox">
-            <img src="icon/icon-hino.png">
-            <img src="icon/icon-isuzu.png">
-            <img src="icon/icon-fuso.png">
-            <img src="icon/icon-ud.png">
-            <img src="icon/icon-volvo.png">
-            <img src="icon/icon-toyota.png">
-            <img src="icon/icon-nissan.png">
-            <img src="icon/icon-mitsubishi.png">
-            <img src="icon/icon-suzuki.png">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中古トラック検索</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-sub: #f5f4f0;
+      --text: #1a1a18;
+      --text-muted: #6b6a66;
+      --text-hint: #9e9d99;
+      --border: rgba(0,0,0,0.12);
+      --border-md: rgba(0,0,0,0.25);
+      --border-dark: rgba(0,0,0,0.4);
+      --accent: #1a1a18;
+      --accent-fg: #ffffff;
+      --new-bg: #e6f1fb;
+      --new-border: #85b7eb;
+      --new-text: #0c447c;
+      --sale-bg: #faeeda;
+      --sale-border: #ef9f27;
+      --sale-text: #633806;
+      --r-md: 8px;
+      --r-lg: 12px;
+      --r-pill: 999px;
+    }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg-sub);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .page-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* ---- Section label ---- */
+    .sec-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sec-label::before {
+      content: '';
+      width: 3px; height: 13px;
+      background: var(--border-md);
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .section { margin-bottom: 2.2rem; }
+
+    /* ---- Icon grid ---- */
+    .icon-grid { display: grid; gap: 4px; }
+    .maker-grid { grid-template-columns: repeat(10, 1fr); }
+    .type-grid  { grid-template-columns: repeat(9, 1fr); }
+
+    @media (max-width: 620px) {
+      .maker-grid { grid-template-columns: repeat(5, 1fr); }
+      .type-grid  { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (max-width: 400px) {
+      .maker-grid { grid-template-columns: repeat(3, 1fr); }
+      .type-grid  { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .icon-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      padding: 2px 4px 2px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      background: var(--bg);
+      cursor: pointer;
+      transition: border-color .12s, background .12s;
+      user-select: none;
+      text-decoration: none;
+    }
+    .icon-cell:hover  { border-color: var(--border-md); background: var(--bg-sub); }
+    .icon-cell.active { border-color: var(--border-dark); background: var(--bg-sub); }
+
+    /* 実画像 */
+    .icon-cell .ic-img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      display: block;
+    }
+    .type-grid .icon-cell .ic-img {
+      width: 80px;
+      height: 54px;
+    }
+
+    /* 画像読み込み失敗時のフォールバック */
+    .icon-cell .ic-fallback {
+      display: none;
+      width: 68px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-hint);
+      text-align: center;
+      border: 1px dashed var(--border-md);
+      border-radius: 4px;
+    }
+    .icon-cell .ic-img.broken { display: none !important; }
+    .icon-cell .ic-img.broken + .ic-fallback { display: flex; }
+
+    .icon-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .icon-cell:hover .icon-label,
+    .icon-cell.active .icon-label { color: var(--text); }
+
+    /* ---- Keyword tags ---- */
+    .keyword-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .kw-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 18px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-pill);
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--bg);
+      text-decoration: none;
+      transition: all .12s;
+    }
+    .kw-tag:hover { border-color: var(--border-dark); background: var(--bg-sub); }
+    .kw-tag.new  { background: var(--new-bg);  border-color: var(--new-border);  color: var(--new-text); }
+    .kw-tag.sale { background: var(--sale-bg); border-color: var(--sale-border); color: var(--sale-text); }
+    .kw-tag.new:hover, .kw-tag.sale:hover { opacity: .82; }
+    .kw-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .kw-dot.new  { background: var(--new-border); }
+    .kw-dot.sale { background: var(--sale-border); }
+
+    /* ---- Number search ---- */
+    .num-row { display: flex; gap: 8px; }
+    .num-row input {
+      flex: 1;
+      height: 42px;
+      padding: 0 14px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-md);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color .12s;
+    }
+    .num-row input::placeholder { color: var(--text-hint); }
+    .num-row input:focus { outline: none; border-color: var(--border-dark); box-shadow: 0 0 0 3px rgba(0,0,0,.05); }
+
+    .btn-primary {
+      height: 42px;
+      padding: 0 24px;
+      border: none;
+      border-radius: var(--r-md);
+      background: var(--accent);
+      color: var(--accent-fg);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      transition: opacity .12s;
+    }
+    .btn-primary:hover  { opacity: .82; }
+    .btn-primary:active { transform: scale(.98); }
+
+    /* ---- Condition card ---- */
+    .cond-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .cond-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 560px) { .cond-row { grid-template-columns: 1fr 1fr; } }
+
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+    .field-label { font-size: 12px; color: var(--text-muted); }
+
+    select {
+      height: 38px;
+      padding: 0 30px 0 11px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-md);
+      background: var(--bg-sub);
+      color: var(--text);
+      font-size: 13px;
+      width: 100%;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+      cursor: pointer;
+      transition: border-color .12s;
+    }
+    select:focus { outline: none; border-color: var(--border-dark); }
+
+    /* ---- Detail toggle ---- */
+    .detail-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 1.5rem;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      transition: color .12s, background .12s;
+      user-select: none;
+    }
+    .detail-toggle:hover { color: var(--text); background: var(--bg-sub); }
+    .detail-toggle .arrow { transition: transform .2s; display: inline-flex; }
+    .detail-toggle.open .arrow { transform: rotate(180deg); }
+    .detail-toggle.open { color: var(--text); }
+
+    /* ---- Detail body ---- */
+    .detail-body {
+      display: none;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-sub);
+    }
+    .detail-body.open { display: block; }
+
+    .detail-selects {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 480px) { .detail-selects { grid-template-columns: 1fr; } }
+
+    .cb-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .cb-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--text);
+      transition: all .12s;
+      user-select: none;
+    }
+    .cb-item:hover   { border-color: var(--border-md); }
+    .cb-item.checked { border-color: var(--border-dark); }
+    .cb-item input[type="checkbox"] {
+      width: 15px; height: 15px; min-width: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* ---- Action row ---- */
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 1rem 1.5rem;
+    }
+    .count-txt { font-size: 13px; color: var(--text-muted); }
+    .count-txt strong { color: var(--text); font-weight: 500; font-size: 15px; }
+
+    .btn-group { display: flex; gap: 8px; }
+    .btn-reset {
+      height: 38px;
+      padding: 0 18px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r-md);
+      background: transparent;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-family: inherit;
+      transition: all .12s;
+    }
+    .btn-reset:hover { background: var(--bg-sub); color: var(--text); border-color: var(--border-dark); }
+
+    .btn-search {
+      height: 38px;
+      padding: 0 24px;
+      border: none;
+      border-radius: var(--r-md);
+      background: var(--accent);
+      color: var(--accent-fg);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity .12s;
+    }
+    .btn-search:hover  { opacity: .82; }
+    .btn-search:active { transform: scale(.98); }
+
+    /* その他セル用ドット */
+    .dot-icon {
+      width: 68px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: var(--text-hint); letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- ======== メーカーから探す ======== -->
+  <div class="section">
+    <div class="sec-label">メーカーから探す</div>
+    <div class="icon-grid maker-grid">
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=hino">
+        <img class="ic-img" src="icon/icon-hino.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">HINO</span>
+        <span class="icon-label">日野</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=isuzu">
+        <img class="ic-img" src="icon/icon-isuzu.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ISUZU</span>
+        <span class="icon-label">いすゞ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=fuso">
+        <img class="ic-img" src="icon/icon-fuso.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">FUSO</span>
+        <span class="icon-label">三菱ふそう</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=ud">
+        <img class="ic-img" src="icon/icon-ud.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">UD</span>
+        <span class="icon-label">UDトラックス</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=volvo">
+        <img class="ic-img" src="icon/icon-volvo.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">VOLVO</span>
+        <span class="icon-label">ボルボ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=toyota">
+        <img class="ic-img" src="icon/icon-toyota.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">TOYOTA</span>
+        <span class="icon-label">トヨタ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=nissan">
+        <img class="ic-img" src="icon/icon-nissan.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">NISSAN</span>
+        <span class="icon-label">日産</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=mitsubishi">
+        <img class="ic-img" src="icon/icon-mitsubishi.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">MITSUBISHI</span>
+        <span class="icon-label">三菱</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=suzuki">
+        <img class="ic-img" src="icon/icon-suzuki.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">SUZUKI</span>
+        <span class="icon-label">スズキ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?maker=other">
+        <span class="dot-icon">…</span>
+        <span class="icon-label">その他</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== 形状から探す ======== -->
+  <div class="section">
+    <div class="sec-label">形状から探す</div>
+    <div class="icon-grid type-grid">
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=wing">
+        <img class="ic-img" src="icon/icon-wing.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ウイング</span>
+        <span class="icon-label">ウイング</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=dump">
+        <img class="ic-img" src="icon/icon-dump.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ダンプ</span>
+        <span class="icon-label">ダンプ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=van">
+        <img class="ic-img" src="icon/icon-van.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">バン</span>
+        <span class="icon-label">バン</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=crane">
+        <img class="ic-img" src="icon/icon-crane.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">クレーン付</span>
+        <span class="icon-label">クレーン付</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=head">
+        <img class="ic-img" src="icon/icon-head.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">トラクタ</span>
+        <span class="icon-label">トラクタ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=head">
+        <img class="ic-img" src="icon/icon-trailer.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">トレーラー</span>
+        <span class="icon-label">トレーラー</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=freezer">
+        <img class="ic-img" src="icon/icon-fleazer.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">冷凍・冷蔵</span>
+        <span class="icon-label">冷凍・冷蔵</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=flat">
+        <img class="ic-img" src="icon/icon-flat.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">平ボディ</span>
+        <span class="icon-label">平ボディ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=armroll">
+        <img class="ic-img" src="icon/icon-armroll.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">アームロール</span>
+        <span class="icon-label">アームロール</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=loader">
+        <img class="ic-img" src="icon/icon-loader.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ローダー</span>
+        <span class="icon-label">ローダー</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=packer">
+        <img class="ic-img" src="icon/icon-packer.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">パッカー車</span>
+        <span class="icon-label">パッカー車</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=mixer">
+        <img class="ic-img" src="icon/icon-mixer.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ミキサー車</span>
+        <span class="icon-label">ミキサー車</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=bus">
+        <img class="ic-img" src="icon/icon-bus.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">バス・マイクロ</span>
+        <span class="icon-label">バス・マイクロ</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=onebox">
+        <img class="ic-img" src="icon/icon-onebox.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ワンボックス</span>
+        <span class="icon-label">ワンボックス</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=litevan">
+        <img class="ic-img" src="icon/icon-litevan.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">ライトバン</span>
+        <span class="icon-label">ライトバン</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=keivan">
+        <img class="ic-img" src="icon/icon-keivan.png" alt="" onerror="this.classList.add('broken')">
+        <span class="ic-fallback">軽バン</span>
+        <span class="icon-label">軽バン</span>
+      </div>
+
+      <div class="icon-cell" onclick="toggleCell(this)" data-href="/list?type=other">
+        <span class="dot-icon">…</span>
+        <span class="icon-label">その他</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== 人気のキーワード ======== -->
+  <div class="section">
+    <div class="sec-label">人気のキーワード</div>
+    <div class="keyword-row">
+      <a href="/list?tag=new"         class="kw-tag new"><span class="kw-dot new"></span>新着車両</a>
+      <a href="/list?tag=sale"        class="kw-tag sale"><span class="kw-dot sale"></span>価格見直し車両</a>
+      <a href="/list?tag=unused"      class="kw-tag">未使用車</a>
+      <a href="/list?tag=trailer-set" class="kw-tag">トレーラーセット</a>
+      <a href="/list"                 class="kw-tag">全ての車両を見る</a>
+    </div>
+  </div>
+
+  <!-- ======== 問合せ番号で検索 ======== -->
+  <div class="section">
+    <div class="sec-label">問合せ番号で検索</div>
+    <div class="num-row">
+      <input type="text" id="numInput" placeholder="問合せ番号を入力（例：TK-12345）">
+      <button class="btn-primary" onclick="doNumSearch()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        検索
+      </button>
+    </div>
+  </div>
+
+  <!-- ======== 条件を指定して検索 ======== -->
+  <div class="section">
+    <div class="sec-label">条件を指定して検索</div>
+    <div class="cond-card">
+
+      <div class="cond-row">
+        <div class="field-group">
+          <div class="field-label">形状</div>
+          <select id="sel-type" onchange="updateCount()">
+            <option value="">すべての形状</option>
+            <option value="wing">ウイング</option>
+            <option value="dump">ダンプ</option>
+            <option value="van">バン</option>
+            <option value="crane">クレーン付（ユニック）</option>
+            <option value="trailer">トレーラー</option>
+            <option value="freezer">冷凍・冷蔵車</option>
+            <option value="flat">平ボディ</option>
+            <option value="armroll">アームロール</option>
+            <option value="loader">ローダー</option>
+            <option value="packer">パッカー車</option>
+            <option value="mixer">ミキサー車</option>
+            <option value="bus">バス・マイクロ</option>
+            <option value="onebox">ワンボックス</option>
+            <option value="litevan">ライトバン</option>
+            <option value="keivan">軽バン</option>
+          </select>
         </div>
-        <div class="typebox">
-            <img src="icon/icon-wing.png">
-            <img src="icon/icon-dump.png">
-            <img src="icon/icon-van.png">
-            <img src="icon/icon-crane.png">
-            <img src="icon/icon-head.png">
-            <img src="icon/icon-trailer.png">
-            <img src="icon/icon-fleazer.png">
-            <img src="icon/icon-flat.png">
-            <img src="icon/icon-armroll.png">
-            <img src="icon/icon-loader.png">
-            <img src="icon/icon-packer.png">
-            <img src="icon/icon-mixer.png">
-            <img src="icon/icon-bus.png">
-            <img src="icon/icon-onebox.png">
-            <img src="icon/icon-litevan.png">
-            <img src="icon/icon-keivan.png">
+        <div class="field-group">
+          <div class="field-label">メーカー</div>
+          <select id="sel-maker" onchange="updateCount()">
+            <option value="">すべてのメーカー</option>
+            <option value="hino">日野（HINO）</option>
+            <option value="isuzu">いすゞ（ISUZU）</option>
+            <option value="fuso">三菱ふそう（FUSO）</option>
+            <option value="ud">UDトラックス</option>
+            <option value="volvo">ボルボ（VOLVO）</option>
+            <option value="toyota">トヨタ</option>
+            <option value="nissan">日産</option>
+            <option value="mitsubishi">三菱（MITSUBISHI）</option>
+            <option value="suzuki">スズキ</option>
+          </select>
         </div>
-        </section>
-    </body>
+        <div class="field-group">
+          <div class="field-label">大きさ（サイズ）</div>
+          <select id="sel-size" onchange="updateCount()">
+            <option value="">指定しない</option>
+            <option value="kei">軽トラック</option>
+            <option value="s2t">小型（2t以下）</option>
+            <option value="s3t">小型（3t以下）</option>
+            <option value="m4t">中型（4t）</option>
+            <option value="m6t">中型（6t）</option>
+            <option value="l8t">大型（8t〜）</option>
+            <option value="l10t">大型（10t）</option>
+            <option value="xl">超大型（20t超）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="detail-toggle" id="detailToggle" onclick="toggleDetail()">
+        <span class="arrow">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+            <path d="M5 7L0.5 2.5h9L5 7z"/>
+          </svg>
+        </span>
+        詳細を指定する
+      </div>
+
+      <div class="detail-body" id="detailBody">
+        <div class="detail-selects">
+          <div class="field-group">
+            <div class="field-label">年式（初年度登録）</div>
+            <select id="sel-year" onchange="updateCount()">
+              <option value="">指定しない</option>
+              <option value="2022">2022年以降</option>
+              <option value="2020">2020年以降</option>
+              <option value="2018">2018年以降</option>
+              <option value="2015">2015年以降</option>
+              <option value="2010">2010年以降</option>
+              <option value="2005">2005年以降</option>
+              <option value="2000">2000年以降</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">走行距離</div>
+            <select id="sel-km" onchange="updateCount()">
+              <option value="">指定しない</option>
+              <option value="50000">5万km以下</option>
+              <option value="100000">10万km以下</option>
+              <option value="150000">15万km以下</option>
+              <option value="200000">20万km以下</option>
+              <option value="300000">30万km以下</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="cb-grid">
+          <label class="cb-item"><input type="checkbox" value="new"      onchange="cbChanged(this)"><span>新着車両</span></label>
+          <label class="cb-item"><input type="checkbox" value="sale"     onchange="cbChanged(this)"><span>価格見直し</span></label>
+          <label class="cb-item"><input type="checkbox" value="unused"   onchange="cbChanged(this)"><span>未使用車</span></label>
+          <label class="cb-item"><input type="checkbox" value="pto"      onchange="cbChanged(this)"><span>PTO付</span></label>
+          <label class="cb-item"><input type="checkbox" value="airsus"   onchange="cbChanged(this)"><span>エアサス</span></label>
+          <label class="cb-item"><input type="checkbox" value="retarder" onchange="cbChanged(this)"><span>リターダ</span></label>
+          <label class="cb-item"><input type="checkbox" value="shaken"   onchange="cbChanged(this)"><span>車検付</span></label>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <div class="count-txt">該当車両：<strong id="countNum">3,842</strong> 台</div>
+        <div class="btn-group">
+          <button class="btn-reset"  onclick="resetAll()">条件リセット</button>
+          <button class="btn-search" onclick="doSearch()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M9.5 9.5L13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            検索する
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleCell(el) {
+    el.classList.toggle('active');
+    updateCount();
+  }
+
+  function toggleDetail() {
+    document.getElementById('detailToggle').classList.toggle('open');
+    document.getElementById('detailBody').classList.toggle('open');
+  }
+
+  function cbChanged(cb) {
+    cb.closest('.cb-item').classList.toggle('checked', cb.checked);
+    updateCount();
+  }
+
+  function updateCount() {
+    var active  = document.querySelectorAll('.icon-cell.active').length;
+    var checked = document.querySelectorAll('.cb-grid input:checked').length;
+    var yearSel = document.getElementById('sel-year').value  ? 1 : 0;
+    var kmSel   = document.getElementById('sel-km').value    ? 1 : 0;
+    var typeSel = document.getElementById('sel-type').value  ? 1 : 0;
+    var mkrSel  = document.getElementById('sel-maker').value ? 1 : 0;
+    var sizeSel = document.getElementById('sel-size').value  ? 1 : 0;
+    var total = 3842
+      - active  * 200
+      - checked * 280
+      - yearSel * 350
+      - kmSel   * 300
+      - typeSel * 380
+      - mkrSel  * 250
+      - sizeSel * 220;
+    document.getElementById('countNum').textContent = Math.max(12, total).toLocaleString();
+  }
+
+  function resetAll() {
+    document.querySelectorAll('.icon-cell').forEach(function(c) { c.classList.remove('active'); });
+    document.querySelectorAll('select').forEach(function(s) { s.selectedIndex = 0; });
+    document.querySelectorAll('.cb-grid input').forEach(function(cb) {
+      cb.checked = false;
+      cb.closest('.cb-item').classList.remove('checked');
+    });
+    document.getElementById('countNum').textContent = '3,842';
+  }
+
+  function doNumSearch() {
+    var val = document.getElementById('numInput').value.trim();
+    if (!val) { alert('問合せ番号を入力してください'); return; }
+    window.location.href = '/list?num=' + encodeURIComponent(val);
+  }
+
+  function doSearch() {
+    var params = new URLSearchParams();
+    var type  = document.getElementById('sel-type').value;
+    var maker = document.getElementById('sel-maker').value;
+    var size  = document.getElementById('sel-size').value;
+    var year  = document.getElementById('sel-year').value;
+    var km    = document.getElementById('sel-km').value;
+    if (type)  params.set('type',  type);
+    if (maker) params.set('maker', maker);
+    if (size)  params.set('size',  size);
+    if (year)  params.set('year',  year);
+    if (km)    params.set('km',    km);
+    document.querySelectorAll('.cb-grid input:checked').forEach(function(cb) {
+      params.append('opt', cb.value);
+    });
+    document.querySelectorAll('.icon-cell.active').forEach(function(c) {
+      var href = c.getAttribute('data-href') || '';
+      var v = href.split('=')[1];
+      if (v) params.append('tag', v);
+    });
+    window.location.href = '/list?' + params.toString();
+  }
+</script>
+</body>
 </html>
