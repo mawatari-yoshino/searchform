@@ -74,8 +74,8 @@
       .type-grid  { grid-template-columns: repeat(5, 1fr); }
     }
     @media (max-width: 400px) {
-      .maker-grid { grid-template-columns: repeat(3, 1fr); }
-      .type-grid  { grid-template-columns: repeat(3, 1fr); }
+      .maker-grid { grid-template-columns: repeat(4, 1fr); }
+      .type-grid  { grid-template-columns: repeat(4, 1fr); }
     }
 
     .icon-cell {
@@ -102,10 +102,12 @@
       height: 56px;
       object-fit: contain;
       display: block;
+      max-width:100%;
     }
     .type-grid .icon-cell .ic-img {
       width: 80px;
       height: 54px;
+      max-width:100%;
     }
 
     /* 画像読み込み失敗時のフォールバック */
