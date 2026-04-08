@@ -744,7 +744,7 @@ section:has(+ section) {
   left:50%;
   color:#fff;
   text-align:center;
-  width:max-content;
+  width:100%;
   max-width:1200px;
 }
 .main-banner .main-message h1 {
@@ -850,7 +850,7 @@ section:has(+ section) {
 }
 .satei-type .line-inquiry img, .satei-type .form-inquiry img {
   width:150px;
-  height:fit-content;
+  height:auto;
   margin:auto;
 }
 .satei-type .line-inquiry .inquiry-txt, .satei-type .form-inquiry .inquiry-txt {
