@@ -729,7 +729,7 @@ section:has(+ section) {
   top:0;
   left:0;
   z-index:-1;
-  height:100vh;
+  height:100%;
   width:100%;
   background:url(../images/lineart01.png) no-repeat;
   background-position: 50% 50%;
@@ -871,16 +871,19 @@ section:has(+ section) {
 }
 .satei-type .line-inquiry img, .satei-type .form-inquiry img {
   width:auto;
-  max-width:150px;
+  max-width:120px;
   height:auto;
-  max-height:150px;
+  max-height:120px;
   margin:auto;
 }
 .satei-type .line-inquiry .inquiry-txt, .satei-type .form-inquiry .inquiry-txt {
   flex:1 1 300px;
 }
+.satei-type .line-inquiry span, .satei-type .form-inquiry span {
+  font-size:14px;
+}
 .satei-type .line-inquiry h2, .satei-type .form-inquiry h2 {
-  font-size:2rem;
+  font-size:22px;
   margin-bottom:8px;
 }
 .satei-type .line-inquiry ul, .satei-type .form-inquiry ul {
@@ -888,6 +891,7 @@ section:has(+ section) {
   padding-left:17px;
   line-height:1.5;
   margin-bottom:1rem;
+  font-size:15px;
 }
 .satei-type .line-inquiry a, .satei-type .form-inquiry a {
   display:block;
@@ -929,7 +933,7 @@ section:has(+ section) {
   margin-bottom:36px;
 }
 .line-step h3 {
-  font-size:24px;
+  font-size:20px;
   width:fit-content;
   margin:auto;
   padding:16px 32px;
@@ -981,7 +985,7 @@ section:has(+ section) {
   max-width:250px;
 }
 .line-step ul li p {
-  font-size:16px;
+  font-size:15px;
   word-break:auto-phrase;
 }
 .line-step .down-arrow {
@@ -999,7 +1003,7 @@ section:has(+ section) {
 }
 .line-step .line-photo > p {
   margin:0 auto 16px;
-  font-size:21px;
+  font-size:20px;
   padding:2px 32px 8px;
   text-align:center;
   background:#06182f;
