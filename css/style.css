@@ -871,7 +871,7 @@ section:has(+ section) {
 }
 .satei-type .line-inquiry img, .satei-type .form-inquiry img {
   width:auto;
-  max-width:120px;
+  max-width:100px;
   height:auto;
   max-height:120px;
   margin:auto;
@@ -879,7 +879,7 @@ section:has(+ section) {
 .satei-type .line-inquiry .inquiry-txt, .satei-type .form-inquiry .inquiry-txt {
   flex:1 1 300px;
 }
-.satei-type .line-inquiry span, .satei-type .form-inquiry span {
+.satei-type .line-inquiry .inquiry-txt span, .satei-type .form-inquiry .inquiry-txt span {
   font-size:14px;
 }
 .satei-type .line-inquiry h2, .satei-type .form-inquiry h2 {
