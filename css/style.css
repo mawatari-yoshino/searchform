@@ -978,6 +978,7 @@ section:has(+ section) {
   background: #fff;
   border-radius: 24px;
   margin-bottom: 18px;
+  max-width:250px;
 }
 .line-step ul li p {
   font-size:16px;
